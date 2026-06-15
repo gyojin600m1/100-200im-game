@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>個人メドレー タイムアタック🏅</title>
+<meta property="og:title" content="個人メドレー タイムアタック🏅">
+<meta property="og:description" content="バタ→背→平→自!4泳法が切り替わる究極のタイムアタック。お前は何秒?">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { width:100%; height:100%; overflow:hidden; position:fixed; background:#05121f;
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+    touch-action:none; user-select:none; -webkit-user-select:none; }
+  #game { display:block; width:100vw; height:100vh; }
+  .overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; background:rgba(3,12,22,.94); color:#e8f4ff; z-index:10;
+    padding:22px; text-align:center; overflow-y:auto; touch-action:pan-y; }
+  .hidden { display:none !important; }
+  h1 { font-size:clamp(22px,6vw,34px); letter-spacing:.04em; margin-bottom:6px; }
+  .sub { color:#7fb8de; font-size:13px; margin-bottom:14px; letter-spacing:.16em; }
+  .panel { background:#0a1f33; border:1px solid #1b4a6e; border-radius:14px;
+    padding:14px 16px; max-width:355px; width:100%; margin-bottom:14px; }
+  .panel p { font-size:12.5px; line-height:1.8; text-align:left; color:#c8e2f5; }
+  .panel b { color:#ffd35c; }
+  .btn { background:#ffb400; color:#15212e; border:none; border-radius:999px;
+    font-size:19px; font-weight:800; padding:15px 50px; letter-spacing:.1em;
+    box-shadow:0 4px 0 #b07a00; cursor:pointer; }
+  .btn:active { transform:translateY(3px); box-shadow:0 1px 0 #b07a00; }
+  .btn.sec { background:#15324a; color:#bfe0f5; box-shadow:0 4px 0 #0a1a28; font-size:14px;
+    padding:11px 28px; margin-top:10px; }
+  .btn.share { background:#1d9bf0; color:#fff; box-shadow:0 4px 0 #11679f; font-size:16px; padding:13px 34px; margin-top:4px; }
+  .row-opt { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-bottom:12px; }
+  .opt { border:1px solid #1b4a6e; background:#0a1d2e; color:#bfe0f5; border-radius:999px;
+    font-size:13px; font-weight:700; padding:8px 14px; cursor:pointer; }
+  .opt.on { background:#ffb400; color:#15212e; border-color:#ffb400; }
+  .opt-label { font-size:11px; color:#7fb8de; width:100%; margin-bottom:4px; letter-spacing:.1em; }
+  .name-wrap { width:100%; max-width:355px; margin-bottom:12px; text-align:left; }
+  .name-wrap label { font-size:12px; color:#7fb8de; display:block; margin-bottom:6px; }
+  #nameInput { width:100%; font-size:18px; padding:12px 14px; border-radius:10px;
+    border:1px solid #1b4a6e; background:#0a1f33; color:#fff; text-align:center;
+    user-select:text; -webkit-user-select:text; }
+  #nameInput::placeholder { color:#3d586e; }
+  .board { font-family:"Courier New",ui-monospace,monospace; background:#000;
+    border:2px solid #233; border-radius:10px; color:#ffb400; padding:14px 18px;
+    width:100%; max-width:340px; margin-bottom:14px; }
+  .board .big { font-size:clamp(34px,11vw,52px); font-weight:700; letter-spacing:.04em;
+    text-shadow:0 0 12px rgba(255,180,0,.5); }
+  .board .rowb { display:flex; justify-content:space-between; font-size:13px; margin-top:7px; color:#ffcf6b; }
+  .rank { font-size:20px; font-weight:800; color:#7df0a8; margin-bottom:4px; }
+  .myrank { font-size:14px; font-weight:800; color:#ffd35c; margin-bottom:10px; }
+  .newbest { color:#ff6b8d; font-weight:800; font-size:16px; margin-bottom:10px;
+    animation:blink .8s step-start infinite; }
+  @keyframes blink { 50% { opacity:.2; } }
+  .fs { color:#ff5470; font-size:clamp(28px,8vw,42px); font-weight:900; margin-bottom:8px; }
+  .copied { font-size:13px; color:#7df0a8; margin-top:8px; min-height:18px; }
+  .strokeline { display:flex; gap:4px; justify-content:center; margin-bottom:14px; flex-wrap:wrap; }
+  .stroketag { font-size:12px; padding:5px 10px; border-radius:8px; background:#0a1f33;
+    border:1px solid #1b4a6e; color:#c8e2f5; font-weight:700; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="title" class="overlay">
+  <h1 id="titleH1">個人メドレー</h1>
+  <div class="sub">INDIVIDUAL MEDLEY 🏅</div>
+  <div class="strokeline">
+    <span class="stroketag">🦋 バタ</span>
+    <span class="stroketag">🛌 背</span>
+    <span class="stroketag">🐸 平</span>
+    <span class="stroketag">🏊 自</span>
+  </div>
+  <div class="row-opt">
+    <div class="opt-label">距離</div>
+    <button class="opt distOpt on" data-dist="100">100m(各25m)</button>
+    <button class="opt distOpt" data-dist="200">200m(各50m)</button>
+  </div>
+  <div class="panel">
+    <p>🏅 <b>4泳法を順番に泳ぐ</b>:バタ→背→平→自。レグが変わるたび操作も変わる!<br>
+       🦋 <b>バタ・平</b>:<b>両手同時タップ</b>(平はグライド待ちあり)<br>
+       🛌 <b>背・自</b>:<b>左右交互タップ</b><br>
+       📢 切り替わりで<b>次の泳法を大予告</b>。画面下にも操作を常時表示するので安心<br>
+       🔄 ターンは壁の<b>直前タップ</b>。🔥 ラスト10m連打解禁!</p>
+  </div>
+  <div class="row-opt">
+    <div class="opt-label">キャラ(速さは全員同じ)</div>
+    <button class="opt chOpt on" data-ch="human">🏊 人間</button>
+    <button class="opt chOpt" data-ch="dog">🐕 犬</button>
+    <button class="opt chOpt" data-ch="cat">🐈 猫</button>
+  </div>
+  <div class="row-opt">
+    <div class="opt-label">クラス(判定の厳しさ)</div>
+    <button class="opt tolOpt" data-tol="180" data-name="6級以下">6級以下</button>
+    <button class="opt tolOpt on" data-tol="120" data-name="7〜9級">7〜9級</button>
+    <button class="opt tolOpt" data-tol="80" data-name="全国レベル">全国レベル</button>
+  </div>
+  <div class="name-wrap">
+    <label>選手名(ニックネーム推奨)</label>
+    <input id="nameInput" type="text" maxlength="10" placeholder="名前を入れてね" autocomplete="off">
+  </div>
+  <div id="bestLabel" class="myrank"></div>
+  <button id="startBtn" class="btn">スタート</button>
+</div>
+
+<div id="false" class="overlay hidden">
+  <div class="fs" id="fsTitle">失 格</div>
+  <div class="sub" id="fsSub">FALSE START</div>
+  <div class="panel"><p id="fsMsg"></p></div>
+  <button id="retryBtn" class="btn">もう一度</button>
+</div>
+
+<div id="result" class="overlay hidden">
+  <div id="rank" class="rank"></div>
+  <div id="newBest" class="newbest hidden">★ 自己ベスト更新! ★</div>
+  <div id="myRank" class="myrank"></div>
+  <div class="board">
+    <div class="big" id="finalTime">--.--</div>
+    <div class="rowb"><span>🦋 バタ</span><span id="rFly">-</span></div>
+    <div class="rowb"><span>🛌 背</span><span id="rBack">-</span></div>
+    <div class="rowb"><span>🐸 平</span><span id="rBreast">-</span></div>
+    <div class="rowb"><span>🏊 自</span><span id="rFree">-</span></div>
+    <div class="rowb"><span>最高コンボ</span><span id="rCombo">-</span></div>
+  </div>
+  <button id="againBtn" class="btn">もう一度</button>
+  <button id="shareXBtn" class="btn share">𝕏 でタイムを自慢する</button>
+  <button id="copyBtn" class="btn sec">📋 結果をコピー(インスタ用)</button>
+  <div id="copied" class="copied"></div>
+  <button id="homeBtn" class="btn sec">タイトルへ</button>
+</div>
+
+<script>
+(() => {
+"use strict";
+const cv=document.getElementById("game"), cx=cv.getContext("2d");
+let W=0,H=0,DPR=1;
+function resize() {
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=window.innerWidth; H=window.innerHeight;
+  cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+"px"; cv.style.height=H+"px";
+  cx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener("resize",resize); resize();
+const store={ get(k){try{return localStorage.getItem(k);}catch(e){return null;}},
+  set(k,v){try{localStorage.setItem(k,v);}catch(e){}} };
+
+// ---------- サウンド ----------
+let AC=null;
+function ac(){ if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)(); return AC; }
+function tone(f,d,t,v){ try{const a=ac(),o=a.createOscillator(),g=a.createGain();
+  o.type=t||"sine"; o.frequency.value=f; g.gain.setValueAtTime(v||0.15,a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+d); o.connect(g); g.connect(a.destination);
+  o.start(); o.stop(a.currentTime+d);}catch(e){} }
+const beep=()=>tone(1100,0.18,"square",0.22);
+const buzz=()=>{tone(200,0.4,"sawtooth",0.2);setTimeout(()=>tone(160,0.5,"sawtooth",0.2),180);};
+const sndPerfect=()=>{tone(330,0.14,"triangle",0.22);tone(440,0.14,"triangle",0.14);};
+const sndOk=()=>tone(260,0.12,"triangle",0.16);
+const sndBad=()=>tone(130,0.16,"sawtooth",0.12);
+const sndSwitch=()=>{tone(660,0.12,"square",0.16);setTimeout(()=>tone(880,0.16,"square",0.16),130);};
+
+// ---------- 泳法定義 ----------
+// type: "alt"=左右交互, "sync"=両手同時, "syncglide"=両手+グライド待ち
+const STROKES = [
+  { key:"fly",    name:"バタフライ", icon:"🦋", type:"sync",      color:"#ff8ac4", op:"両手同時タップ" },
+  { key:"back",   name:"背泳ぎ",     icon:"🛌", type:"alt",       op:"左右交互タップ", color:"#7fc8f0" },
+  { key:"breast", name:"平泳ぎ",     icon:"🐸", type:"syncglide", op:"両手同時+グライド待ち", color:"#7df0a8" },
+  { key:"free",   name:"自由形",     icon:"🏊", type:"alt",       op:"左右交互タップ", color:"#ffd35c" }
+];
+
+// ---------- 設定 ----------
+let TOL=120; let CHAR="human"; let RACE_DIST=100;
+const TARGET=0.42;          // 交互の理想間隔
+const PAIR_WINDOW=240;      // 同時判定窓
+const GLIDE_LOCK_MS=380;    // 平のグライドロック
+
+// ---------- 状態 ----------
+const S={TITLE:0,MARKS:1,SET:2,SWIM:3,FINISH:4,FALSE:5};
+let state=S.TITLE; let playerName=""; let myBest=null;
+const POOLLEN=25;
+function legLen() { return RACE_DIST/4; }   // 100m=25, 200m=50
+function LEGS() { return 4; }               // 常に4レグ(=4泳法)
+function GLIDE() { return RACE_DIST===200?7:6; }
+function SPURT_FROM() { return RACE_DIST-8; }
+
+const G={
+  dist:0, vel:0, leg:1, raceStart:0, beepAt:0, rt:0,
+  finalTime:0, stamina:100,
+  // 交互用
+  lastSide:null, lastTapT:0, strokeSide:1,
+  // 同時用
+  pendSide:null, pendT:0, pendTimer:null,
+  // 平グライド
+  glockEnd:0,
+  // 共通
+  strokes:0, combo:0, maxCombo:0,
+  strokeAnim:0, dove:false, glideDone:false,
+  msg:"", msgT:0, fbLabel:"", fbColor:"",
+  legTimes:[0,0,0,0], legStartT:0,
+  bigMsg:"", bigMsgT:0
+};
+let particles=[];
+
+function legStartDist() { return (G.leg-1)*legLen(); }
+function distInLeg() { return G.dist-legStartDist(); }
+function curStroke() { return STROKES[Math.min(G.leg-1,3)]; }
+function inGlide() { return distInLeg()<GLIDE(); }
+function inSpurt() { return G.dist>=SPURT_FROM(); }
+function inGlideLock(now) { return (now||performance.now())<G.glockEnd; }
+
+function layout() {
+  const boardH=64, zoneH=Math.max(140,H*0.26);
+  return { boardH, zoneH, poolTop:boardH+24, poolBottom:H-zoneH-24 };
+}
+
+function resetRace() {
+  Object.assign(G,{
+    dist:0,vel:0,leg:1,rt:0,finalTime:0,stamina:100,
+    lastSide:null,lastTapT:0,strokeSide:1,
+    pendSide:null,pendT:0, glockEnd:0,
+    strokes:0,combo:0,maxCombo:0,
+    strokeAnim:0,dove:false,glideDone:false,
+    msg:"",msgT:0,fbLabel:"",fbColor:"",
+    legTimes:[0,0,0,0],legStartT:0,bigMsg:"",bigMsgT:0
+  });
+  clearTimeout(G.pendTimer); particles=[];
+}
+let setTimer=null;
+function startSequence() {
+  resetRace(); state=S.MARKS;
+  setTimer=setTimeout(()=>{
+    state=S.SET;
+    const delay=1100+Math.random()*1700;
+    setTimer=setTimeout(()=>{
+      beep(); G.beepAt=performance.now();
+      state=S.SWIM; G.raceStart=G.beepAt; G.legStartT=G.beepAt;
+      setBig(STROKES[0].icon+" バタフライ", STROKES[0].op);
+    },delay);
+  },1300);
+}
+function falseStart() {
+  clearTimeout(setTimer); buzz(); state=S.FALSE;
+  document.getElementById("fsTitle").textContent="失 格";
+  document.getElementById("fsSub").textContent="FALSE START";
+  document.getElementById("fsMsg").textContent="合図より早く飛び込みました。一発失格はルールです…ドンマイ!";
+  show("false");
+}
+function dive() {
+  G.dove=true; G.rt=(performance.now()-G.beepAt)/1000;
+  const v0=Math.max(2.2,Math.min(3.6,3.6-(G.rt-0.55)*2.0));
+  G.vel=v0; G.glideDone=false; G.glockEnd=0;
+  splash(0,14); setMsg("GO!",800);
+}
+
+// ---------- 入力ルーター ----------
+function onTap(side) {
+  const now=performance.now();
+  if (state===S.MARKS||state===S.SET) { falseStart(); return; }
+  if (state!==S.SWIM) return;
+  if (!G.dove) { dive(); return; }
+  // ターン
+  if (G.leg<LEGS() && distInLeg()>=legLen()-2) { doTurn(); return; }
+  // ゴール
+  if (G.leg===LEGS() && G.dist>=RACE_DIST-1.5) { G.dist=RACE_DIST; finishRace(); return; }
+  // 蹴伸び中
+  if (inGlide()) { setMsg("蹴伸び中…ガマン!",400); return; }
+  const st=curStroke();
+  if (st.type==="alt") altTap(side,now);
+  else syncTap(side,now,st.type==="syncglide");
+}
+
+// 左右交互(背・自)
+function altTap(side,now) {
+  const spurt=inSpurt();
+  const dt=(now-G.lastTapT)/1000;
+  G.strokes++;
+  let q,label,color;
+  const same=(side===G.lastSide);
+  if (spurt) { q=1.05; label="ラスト!"; color="#ff8aa0"; sndOk(); }
+  else if (same) { q=0.3; label="交互じゃない!"; color="#ff5470"; sndBad(); G.combo=0; }
+  else {
+    const tolSec=TOL/1000, err=Math.abs(dt-TARGET);
+    if (G.lastTapT===0||dt>1.4) { q=0.9; label="いいね"; color="#ffd35c"; sndOk(); }
+    else if (err<=tolSec*0.5) { q=1.2; label="完璧!"; color="#7df0a8"; sndPerfect(); }
+    else if (err<=tolSec) { q=1.0; label="いいね"; color="#ffd35c"; sndOk(); }
+    else { q=0.6; label="リズムが乱れた"; color="#ffa45c"; sndOk(); }
+    G.combo++;
+  }
+  G.maxCombo=Math.max(G.maxCombo,G.combo);
+  G.lastSide=side; G.lastTapT=now;
+  G.strokeSide=side;
+  G.fbLabel=label; G.fbColor=color;
+  applyStroke(q,spurt,now,side==="L"?-10:10);
+}
+
+// 両手同時(バタ・平)
+function syncTap(side,now,withGlide) {
+  if (G.pendSide===null) {
+    G.pendSide=side; G.pendT=now;
+    G.pendTimer=setTimeout(()=>{ G.pendSide=null; },PAIR_WINDOW);
+    return;
+  }
+  if (G.pendSide===side) { clearTimeout(G.pendTimer); G.pendSide=null; return; }
+  clearTimeout(G.pendTimer);
+  const diff=now-G.pendT; G.pendSide=null;
+  const spurt=inSpurt();
+  // 平のグライドロック
+  if (withGlide && !spurt && inGlideLock(now)) {
+    G.vel=Math.max(0,G.vel-0.2); setMsg("グライドしろ!",500); tone(180,0.1,"sawtooth",0.1); return;
+  }
+  G.strokes++;
+  let q,label,color;
+  if (spurt) { q=1.05; label="ラスト!"; color="#ff8aa0"; sndOk(); }
+  else if (withGlide) {
+    // 平:グライド明け後の早さで採点(ブースト強化)
+    const waitMs=G.glockEnd>0?now-G.glockEnd:200;
+    if (waitMs<=TOL*0.5) { q=2.4; label="完璧タイミング!⚡"; color="#7df0a8"; sndPerfect(); }
+    else if (waitMs<=TOL*2) { q=1.6; label="グッド"; color="#ffd35c"; sndOk(); }
+    else { q=0.6; label="グライドしすぎ"; color="#ffa45c"; sndOk(); }
+  } else {
+    // バタ:左右同時の揃い具合
+    if (diff<=TOL*0.45) { q=1.2; label="完璧シンクロ!"; color="#7df0a8"; sndPerfect(); }
+    else if (diff<=TOL) { q=1.0; label="いいね"; color="#ffd35c"; sndOk(); }
+    else { q=0.5; label="腕が揃ってない!"; color="#ff5470"; sndBad(); }
+  }
+  G.combo++; G.maxCombo=Math.max(G.maxCombo,G.combo);
+  if (withGlide) G.glockEnd=now+GLIDE_LOCK_MS;
+  G.fbLabel=label; G.fbColor=color;
+  applyStroke(q,spurt,now,0);
+}
+
+function applyStroke(q,spurt,now,dx) {
+  let cost=spurt?1.0:1.5;
+  G.stamina=Math.max(0,G.stamina-cost);
+  let sf=G.stamina>40?1:0.45+0.55*(G.stamina/40);
+  if (spurt) sf=Math.max(sf,0.7);
+  G.vel=Math.min(3.1,G.vel+0.7*q*sf);
+  G.strokeAnim=1;
+  splash(dx,q>=2?140:60);
+  setMsg("かき!",0);
+}
+
+function doTurn() {
+  // 現レグのタイム記録
+  const legT=(performance.now()-G.legStartT)/1000;
+  G.legTimes[G.leg-1]=legT;
+  G.legStartT=performance.now();
+  const d=distInLeg();
+  let q=(d>=legLen()-0.6)?1.15:(d>=legLen()-1.5)?0.95:0.7;
+  G.leg++; G.dist=legStartDist();
+  G.vel=Math.max(G.vel*0.5,2.85*q);
+  G.glideDone=false; G.glockEnd=0; G.pendSide=null; G.lastSide=null; G.lastTapT=0;
+  const st=curStroke();
+  sndSwitch();
+  setBig("NEXT ▶ "+st.icon+" "+st.name, st.op);
+  splash(0,12);
+}
+function finishRace() {
+  G.legTimes[G.leg-1]=(performance.now()-G.legStartT)/1000;
+  G.finalTime=(performance.now()-G.raceStart)/1000;
+  state=S.FINISH; tone(1320,0.25,"square",0.18);
+  showResult();
+}
+
+function setMsg(t,ms) { G.msg=t; G.msgT=performance.now()+(ms||700); }
+function setBig(t,sub) { G.bigMsg=t; G.bigMsgSub=sub||""; G.bigMsgT=performance.now()+1700; }
+function splash(dx,spread) {
+  const L=layout(),y=swimmerY(L);
+  const n=Math.max(3,Math.round(spread/12));
+  for (let i=0;i<n;i++) particles.push({x:W/2+dx+(Math.random()-.5)*spread,
+    y:y+(Math.random()-.5)*20,vx:(Math.random()-.5)*70,vy:-Math.random()*55,r:2+Math.random()*3,a:1});
+}
+function swimmerY(L) {
+  const span=L.poolBottom-L.poolTop,odd=(G.leg%2===1),f=distInLeg()/legLen();
+  return odd?L.poolBottom-f*span:L.poolTop+f*span;
+}
+
+// ---------- 更新 ----------
+let prevT=performance.now();
+function update(now) {
+  const dt=Math.min(0.05,(now-prevT)/1000); prevT=now;
+  G.strokeAnim=Math.max(0,G.strokeAnim-dt*3.2);
+  if (state!==S.SWIM||!G.dove) return;
+  const st=curStroke();
+  if (inGlide()) G.vel=Math.max(1.0,G.vel*Math.exp(-0.5*dt));
+  else if (st.type==="syncglide"&&inGlideLock(now)) G.vel=Math.max(0,G.vel*Math.exp(-0.55*dt));
+  else G.vel=Math.max(0,G.vel*Math.exp(-0.95*dt));
+  G.dist+=G.vel*dt;
+  if (!G.glideDone&&distInLeg()>=GLIDE()) { G.glideDone=true; tone(740,0.1,"sine",0.1); }
+  if (G.leg===LEGS()&&G.dist>=RACE_DIST) { G.dist=RACE_DIST; finishRace(); return; }
+  for (const p of particles) { p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=150*dt; p.a-=dt*2; }
+  particles=particles.filter(p=>p.a>0);
+}
+
+// ---------- 描画 ----------
+function fmt(t) {
+  if (t==null) return "--.--";
+  const m=Math.floor(t/60),s=t-m*60,ss=s.toFixed(2).padStart(5,"0");
+  return m>0?m+":"+ss:ss;
+}
+function draw(now) {
+  const L=layout();
+  const st=curStroke();
+  cx.fillStyle="#05121f"; cx.fillRect(0,0,W,H);
+  const laneW=Math.min(W*0.62,280),lx=(W-laneW)/2;
+  // 背泳ぎレグは明るい視点
+  const grad=cx.createLinearGradient(0,L.poolTop,0,L.poolBottom);
+  if (st.key==="back") { grad.addColorStop(0,"#86c5e8"); grad.addColorStop(0.5,"#3d8fbf"); grad.addColorStop(1,"#0d4f80"); }
+  else { grad.addColorStop(0,"#0d4f80"); grad.addColorStop(1,"#1173ad"); }
+  cx.fillStyle=grad; cx.fillRect(lx,L.poolTop,laneW,L.poolBottom-L.poolTop);
+
+  cx.globalAlpha=st.key==="back"?0.45:0.08; cx.fillStyle="#bfe7ff";
+  const gp=st.key==="back"?80:90, off=st.key==="back"?(now/8)%gp:0;
+  for (let i=0;i<6;i++) {
+    const yy=L.poolTop+((now/40+i*gp+off)%(L.poolBottom-L.poolTop));
+    cx.fillRect(lx,yy,laneW,st.key==="back"?3:2);
+  }
+  cx.globalAlpha=1;
+
+  cx.fillStyle="#e8eef2";
+  cx.fillRect(lx-6,L.poolTop-10,laneW+12,10);
+  cx.fillRect(lx-6,L.poolBottom,laneW+12,10);
+  const seg=16;
+  for (const sx of [lx-4,lx+laneW+4]) {
+    for (let y=L.poolTop;y<L.poolBottom;y+=seg) {
+      const n5=(y-L.poolTop)<(L.poolBottom-L.poolTop)*0.2||(L.poolBottom-y)<(L.poolBottom-L.poolTop)*0.2;
+      cx.fillStyle=(Math.floor(y/seg)%2===0)?(n5?"#ff5470":"#e8eef2"):"#2b87c2";
+      cx.beginPath(); cx.arc(sx,y+seg/2,3.2,0,7); cx.fill();
+    }
+  }
+  cx.fillStyle="#083a5c";
+  cx.fillRect(W/2-3,L.poolTop,6,L.poolBottom-L.poolTop);
+  cx.fillRect(W/2-18,L.poolTop+6,36,6);
+  cx.fillRect(W/2-18,L.poolBottom-12,36,6);
+
+  // 平のグライドロック演出
+  if (state===S.SWIM&&G.dove&&st.type==="syncglide"&&!inGlide()&&G.glockEnd>0) {
+    const rem=G.glockEnd-now;
+    if (rem>0) { cx.globalAlpha=0.13; cx.fillStyle="#ff5470"; cx.fillRect(lx,L.poolTop,laneW,L.poolBottom-L.poolTop); }
+    else if (now-G.glockEnd<TOL*1.8) { cx.globalAlpha=0.18; cx.fillStyle="#7df0a8"; cx.fillRect(lx,L.poolTop,laneW,L.poolBottom-L.poolTop); }
+    cx.globalAlpha=1;
+  }
+
+  // ターンゾーン
+  const span=L.poolBottom-L.poolTop;
+  if (state===S.SWIM&&G.dove&&G.leg<LEGS()&&distInLeg()>=legLen()-5) {
+    const odd=(G.leg%2===1), yWall=odd?L.poolTop:L.poolBottom, zH=(2/legLen())*span;
+    cx.globalAlpha=0.25+0.15*Math.sin(now/120); cx.fillStyle="#ffd35c";
+    cx.fillRect(lx,odd?yWall:yWall-zH,laneW,zH); cx.globalAlpha=1;
+    if (distInLeg()>=legLen()-3) {
+      cx.fillStyle="#ffd35c"; cx.font="bold 18px sans-serif"; cx.textAlign="center";
+      cx.fillText("ターン!",W/2,odd?yWall+zH+22:yWall-zH-12);
+    }
+  }
+  // スパート
+  if (state===S.SWIM&&G.dove&&G.dist>=SPURT_FROM()-5) {
+    const f=(SPURT_FROM()-legStartDist())/legLen(), odd=(G.leg%2===1);
+    const ys=odd?L.poolBottom-f*span:L.poolTop+f*span;
+    cx.globalAlpha=inSpurt()?0.2+0.1*Math.sin(now/90):0.08; cx.fillStyle="#ff5470";
+    if (odd) cx.fillRect(lx,L.poolTop,laneW,ys-L.poolTop); else cx.fillRect(lx,ys,laneW,L.poolBottom-ys);
+    cx.globalAlpha=1;
+  }
+
+  // スイマー
+  if (state===S.SWIM||state===S.FINISH) {
+    const y=swimmerY(L),odd=(G.leg%2===1);
+    cx.save(); cx.translate(W/2,y); if (!odd) cx.rotate(Math.PI);
+    drawSwimmer(now,st); cx.restore();
+  }
+
+  if (state===S.MARKS||state===S.SET) {
+    cx.fillStyle="#e8f4ff"; cx.font="bold 24px sans-serif"; cx.textAlign="center";
+    cx.fillText(state===S.MARKS?"Take your marks…":"・・・",W/2,(L.poolTop+L.poolBottom)/2-10);
+    cx.font="13px sans-serif"; cx.fillStyle="#7fb8de";
+    cx.fillText(state===S.SET?"電子音を待て… 早タップは失格!":"構えて…",W/2,(L.poolTop+L.poolBottom)/2+16);
+  }
+  if (state===S.SWIM&&!G.dove) {
+    cx.fillStyle="#7df0a8"; cx.font="bold 28px sans-serif"; cx.textAlign="center";
+    cx.fillText("タップで飛び込め!",W/2,(L.poolTop+L.poolBottom)/2);
+  }
+
+  for (const p of particles) {
+    cx.globalAlpha=Math.max(0,p.a); cx.fillStyle="#dff2ff";
+    cx.beginPath(); cx.arc(p.x,p.y,p.r,0,7); cx.fill();
+  }
+  cx.globalAlpha=1;
+
+  // 電光掲示板
+  cx.fillStyle="#000"; cx.fillRect(0,0,W,L.boardH);
+  cx.strokeStyle="#243240"; cx.lineWidth=1; cx.strokeRect(0.5,0.5,W-1,L.boardH-1);
+  cx.fillStyle="#ffb400"; cx.font="bold 28px 'Courier New',monospace"; cx.textAlign="left";
+  let t=0;
+  if (state===S.SWIM) t=(performance.now()-G.raceStart)/1000;
+  if (state===S.FINISH) t=G.finalTime;
+  cx.fillText("⏱ "+fmt(state>=S.SWIM&&state!==S.FALSE?t:null),12,36);
+  cx.font="12px 'Courier New',monospace"; cx.fillStyle="#ffcf6b";
+  const rtTxt=G.dove?"RT +"+G.rt.toFixed(2):"RT --";
+  cx.fillText(rtTxt+"   "+Math.min(RACE_DIST,Math.floor(G.dist))+"m / "+RACE_DIST+"m",12,54);
+  cx.textAlign="right";
+  // 現在の泳法を大きく掲示板に
+  cx.fillStyle=st.color; cx.font="bold 15px sans-serif";
+  cx.fillText(st.icon+" "+st.name,W-12,22);
+  cx.fillStyle="#5a7e99"; cx.font="10px sans-serif";
+  const ci=CHAR==="dog"?"🐕":CHAR==="cat"?"🐈":"🏊";
+  cx.fillText(ci+(playerName||"GUEST")+" ｜ "+G.combo+"コンボ",W-12,40);
+
+  // タップゾーン(泳法ごとにラベル変化)
+  const zy=H-L.zoneH;
+  const glideNow=state===S.SWIM&&G.dove&&inGlide();
+  const lockNow=state===S.SWIM&&G.dove&&st.type==="syncglide"&&!glideNow&&inGlideLock(now);
+  const spurtNow=state===S.SWIM&&G.dove&&inSpurt();
+  for (const side of ["L","R"]) {
+    const x0=side==="L"?0:W/2;
+    let bg,bd,tc;
+    if (lockNow) { bg="#1a0a0e"; bd="#ff5470"; tc="#ff8aa0"; }
+    else if (spurtNow) { bg="#3a1420"; bd="#ff5470"; tc="#ff8aa0"; }
+    else { bg="#11324d"; bd="#2f7fb6"; tc="#bfe0f5"; }
+    cx.fillStyle=bg; cx.fillRect(x0+4,zy+4,W/2-8,L.zoneH-8);
+    cx.strokeStyle=bd; cx.lineWidth=2; cx.strokeRect(x0+4,zy+4,W/2-8,L.zoneH-8);
+    cx.fillStyle=tc; cx.font="bold 21px sans-serif"; cx.textAlign="center";
+    let lb1,lb2;
+    if (spurtNow) { lb1="連打!!"; lb2="全力!"; }
+    else if (glideNow) { lb1="蹴伸び"; lb2="ガマン!"; }
+    else if (lockNow) { lb1="待て"; lb2="グライド中"; }
+    else if (st.type==="alt") { lb1=side==="L"?"左":"右"; lb2="左右交互"; }
+    else { lb1=side==="L"?"左手":"右手"; lb2="両手同時"; }
+    cx.fillText(lb1,x0+W/4,zy+L.zoneH/2-6);
+    cx.font="11px sans-serif"; cx.fillText(lb2,x0+W/4,zy+L.zoneH/2+16);
+  }
+  // 現泳法の操作を常時表示(ゾーン上部)
+  cx.fillStyle=st.color; cx.font="bold 12px sans-serif"; cx.textAlign="center";
+  cx.fillText(st.icon+" "+st.name+" : "+st.op, W/2, zy-30);
+
+  // スタミナバー
+  const barY=zy-16;
+  cx.fillStyle="#0a1d2e"; cx.fillRect(12,barY,W/2-24,8);
+  cx.fillStyle=G.stamina>40?"#7df0a8":"#ff5470";
+  cx.fillRect(12,barY,(W/2-24)*(G.stamina/100),8);
+  cx.fillStyle="#0a1d2e"; cx.fillRect(W/2+12,barY,W/2-24,8);
+  cx.fillStyle="#bfe0f5"; cx.font="10px sans-serif"; cx.textAlign="right";
+  cx.fillText("速度 "+G.vel.toFixed(1),W-12,barY-4);
+
+  // フィードバックメッセージ
+  if (G.msg&&performance.now()<G.msgT) {
+    const col=G.fbColor||"#ffd35c";
+    cx.fillStyle=col; cx.font="bold 20px sans-serif"; cx.textAlign="center";
+    cx.fillText(G.msg==="かき!"&&G.fbLabel?G.fbLabel:G.msg,W/2,zy-48);
+  }
+
+  // 大予告(泳法切り替え)
+  if (G.bigMsg&&performance.now()<G.bigMsgT) {
+    const a=Math.min(1,(G.bigMsgT-performance.now())/400);
+    cx.globalAlpha=a;
+    cx.fillStyle="rgba(0,0,0,0.6)"; cx.fillRect(0,H*0.32,W,90);
+    cx.fillStyle="#ffd35c"; cx.font="bold 30px sans-serif"; cx.textAlign="center";
+    cx.fillText(G.bigMsg,W/2,H*0.32+42);
+    cx.fillStyle="#fff"; cx.font="bold 16px sans-serif";
+    cx.fillText("操作:"+(G.bigMsgSub||""),W/2,H*0.32+72);
+    cx.globalAlpha=1;
+  }
+}
+
+// ---------- スイマー(泳法で動きが変わる) ----------
+function drawSwimmer(now,st) {
+  const u=Math.min(W,430)/100*0.6;
+  const C=CHARS[CHAR];
+  const gliding=(state===S.SWIM&&G.dove&&inGlide());
+  const flutter=Math.sin(now/70);
+
+  cx.globalAlpha=0.3; cx.fillStyle="#cfeaff";
+  cx.beginPath(); cx.ellipse(0,13*u,(6+G.vel*3)*u*0.5,(10+G.vel*8)*u*0.6,0,0,7); cx.fill();
+  cx.globalAlpha=1;
+
+  if (gliding) {
+    cx.strokeStyle=C.arm; cx.lineWidth=3.2*u; cx.lineCap="round";
+    cx.beginPath();
+    cx.moveTo(-4*u,-3*u); cx.quadraticCurveTo(-1.5*u,-13*u,0,-18*u);
+    cx.moveTo(4*u,-3*u); cx.quadraticCurveTo(1.5*u,-13*u,0,-18*u);
+    cx.stroke();
+    cx.fillStyle=C.arm; cx.beginPath(); cx.arc(0,-18*u,2*u,0,7); cx.fill();
+    C.draw(cx,u,now,flutter,0); return;
+  }
+
+  const ph=1-G.strokeAnim;
+  const faceUp = (st.key==="back"); // 背泳ぎだけ仰向け
+  if (st.type==="sync"||st.type==="syncglide") {
+    // 両腕対称(バタ・平)
+    for (const m of [-1,1]) {
+      const sx=m*4.5*u, sy=-3*u;
+      let hx,hy,mx,my,water;
+      if (ph<0.55) {
+        const p=ph/0.55, ang=(-55+p*125)*Math.PI/180, len=(9+Math.sin(p*Math.PI)*2)*u;
+        hx=sx+m*Math.cos(ang)*len; hy=sy+Math.sin(ang)*len;
+        mx=sx+m*Math.cos(ang-0.3)*len*0.55; my=sy+Math.sin(ang-0.3)*len*0.55; water=true;
+      } else {
+        const p=(ph-0.55)/0.45, ang=(70-p*125)*Math.PI/180, len=(10+Math.sin(p*Math.PI)*3)*u;
+        hx=sx+m*Math.cos(ang)*len*1.1; hy=sy+Math.sin(ang)*len;
+        mx=sx+m*Math.cos(ang+0.3)*len*0.6; my=sy+Math.sin(ang+0.3)*len*0.6; water=false;
+      }
+      cx.strokeStyle=water?C.armWater:C.arm; cx.lineWidth=(water?3.2:3.6)*u; cx.lineCap="round";
+      cx.beginPath(); cx.moveTo(sx,sy); cx.quadraticCurveTo(mx,my,hx,hy); cx.stroke();
+      cx.fillStyle=C.arm; cx.beginPath(); cx.arc(hx,hy,1.8*u,0,7); cx.fill();
+    }
+    const spread=(st.type==="syncglide")?(ph<0.3?ph/0.3:Math.max(0,1-(ph-0.3)/0.35)):0;
+    C.draw(cx,u,now,flutter,spread,false);
+  } else {
+    // 左右交互(背・自)
+    const activeM=(G.strokeSide==="L")?-1:1;
+    for (const m of [-1,1]) {
+      const sx=m*4*u, sy=-3*u; let hx,hy,mx,my,water;
+      if (m===activeM&&G.strokeAnim>0.02) {
+        if (ph<0.55) {
+          const p=ph/0.55, ang=(-60+p*130)*Math.PI/180, len=(10+Math.sin(p*Math.PI)*2)*u;
+          hx=sx+m*Math.cos(ang)*len; hy=sy+Math.sin(ang)*len;
+          mx=sx+m*Math.cos(ang-0.3)*len*0.55; my=sy+Math.sin(ang-0.3)*len*0.55; water=true;
+        } else {
+          const p=(ph-0.55)/0.45, ang=(70-p*130)*Math.PI/180, len=(11+Math.sin(p*Math.PI)*3)*u;
+          hx=sx+m*Math.cos(ang)*len*1.15; hy=sy+Math.sin(ang)*len;
+          mx=sx+m*Math.cos(ang+0.3)*len*0.6; my=sy+Math.sin(ang+0.3)*len*0.6; water=false;
+        }
+      } else {
+        const ang=-63*Math.PI/180, len=11*u;
+        hx=sx+m*Math.cos(ang)*len; hy=sy+Math.sin(ang)*len;
+        mx=sx+m*Math.cos(ang-0.2)*len*0.55; my=sy+Math.sin(ang-0.2)*len*0.55; water=true;
+      }
+      cx.strokeStyle=water?C.armWater:C.arm; cx.lineWidth=(water?3:3.6)*u; cx.lineCap="round";
+      cx.beginPath(); cx.moveTo(sx,sy); cx.quadraticCurveTo(mx,my,hx,hy); cx.stroke();
+      cx.fillStyle=C.arm; cx.beginPath(); cx.arc(hx,hy,1.7*u,0,7); cx.fill();
+    }
+    C.draw(cx,u,now,flutter,0,faceUp);
+  }
+}
+
+const CHARS = {
+  human: { arm:"#e9c4a0", armWater:"#cda888",
+    draw(g,u,now,flutter,spread,faceUp) {
+      // 胴体
+      if (faceUp) {
+        // 仰向け:お腹側(明るい肌色)が見える
+        g.fillStyle="#e9c4a0";
+        g.beginPath(); g.ellipse(0,3*u,5*u,12*u,0,0,7); g.fill();
+        // 水着の下半身ライン
+        g.fillStyle="#1f3445";
+        g.fillRect(-4*u,5*u,8*u,5*u);
+      } else {
+        // うつ伏せ:背中側(競泳水着)が見える
+        g.fillStyle="#1f3445";
+        g.beginPath(); g.ellipse(0,3*u,5*u,12*u,0,0,7); g.fill();
+      }
+      // 足
+      g.strokeStyle="#e9c4a0"; g.lineWidth=3*u; g.lineCap="round";
+      if (spread>0) {
+        const sp=spread*52*Math.PI/180, ll=7.5*u;
+        g.beginPath(); g.moveTo(-1.5*u,10*u); g.lineTo(-1.5*u-Math.sin(sp)*ll,10*u+Math.cos(sp)*ll); g.stroke();
+        g.beginPath(); g.moveTo(1.5*u,10*u); g.lineTo(1.5*u+Math.sin(sp)*ll,10*u+Math.cos(sp)*ll); g.stroke();
+      } else {
+        const f=(flutter||0)*2.2*u;
+        g.beginPath(); g.moveTo(-1.4*u,11*u); g.lineTo(-1.4*u+f*0.4,17*u);
+        g.moveTo(1.4*u,11*u); g.lineTo(1.4*u-f*0.4,17*u); g.stroke();
+      }
+      // 頭
+      g.fillStyle="#ffb400"; // 黄色キャップ
+      g.beginPath(); g.arc(0,-8*u,4.2*u,0,7); g.fill();
+      if (faceUp) {
+        // 仰向け=顔が見える:ゴーグル+鼻+口
+        g.fillStyle="#15212e";
+        g.fillRect(-3*u,-9*u,2.4*u,1.6*u); // 左ゴーグル
+        g.fillRect(0.6*u,-9*u,2.4*u,1.6*u); // 右ゴーグル
+        g.strokeStyle="#c9a585"; g.lineWidth=0.5*u;
+        g.beginPath(); g.moveTo(0,-7*u); g.lineTo(0,-6*u); g.stroke(); // 鼻
+        g.beginPath(); g.arc(0,-5*u,1*u,0.3,Math.PI-0.3); g.stroke(); // 口
+      } else {
+        // うつ伏せ=後頭部:キャップだけ(顔は水中で見えない)
+        // キャップの帽縁線で立体感
+        g.strokeStyle="#c69100"; g.lineWidth=0.6*u;
+        g.beginPath(); g.arc(0,-8*u,4.2*u,0,Math.PI); g.stroke();
+      }
+    } },
+  dog: { arm:"#e0a866", armWater:"#c08c4a",
+    draw(g,u,now,flutter,spread,faceUp) {
+      if (faceUp) {
+        // 仰向け:お腹(白)が上
+        g.fillStyle="#f6e8d0";
+        g.beginPath(); g.ellipse(0,3*u,6*u,12*u,0,0,7); g.fill();
+        g.fillStyle="#e0a866"; // 横腹(柴色)
+        g.beginPath(); g.ellipse(-5*u,3*u,1.5*u,11*u,0,0,7); g.fill();
+        g.beginPath(); g.ellipse(5*u,3*u,1.5*u,11*u,0,0,7); g.fill();
+      } else {
+        // うつ伏せ:背中(柴色)が上
+        g.fillStyle="#e0a866";
+        g.beginPath(); g.ellipse(0,3*u,6*u,12*u,0,0,7); g.fill();
+      }
+      // 足
+      g.strokeStyle="#e0a866"; g.lineWidth=2.8*u; g.lineCap="round";
+      if (spread>0) {
+        const sp=spread*55*Math.PI/180, ll=7.5*u;
+        g.beginPath(); g.moveTo(-2*u,12*u); g.lineTo(-2*u-Math.sin(sp)*ll,12*u+Math.cos(sp)*ll); g.stroke();
+        g.beginPath(); g.moveTo(2*u,12*u); g.lineTo(2*u+Math.sin(sp)*ll,12*u+Math.cos(sp)*ll); g.stroke();
+      }
+      // しっぽ
+      const wag=(flutter||Math.sin(now/100))*3.5*u;
+      g.beginPath(); g.moveTo(0,14*u); g.quadraticCurveTo(wag,18*u,wag*1.3,20*u); g.stroke();
+      // 頭
+      g.fillStyle=faceUp?"#f6e8d0":"#e0a866";
+      g.beginPath(); g.arc(0,-8*u,5*u,0,7); g.fill();
+      if (faceUp) {
+        // 顔(お腹側):笑顔
+        g.fillStyle="#2a1a0a";
+        g.beginPath(); g.arc(-1.8*u,-8.5*u,0.9*u,0,7); g.fill(); // 左目
+        g.beginPath(); g.arc(1.8*u,-8.5*u,0.9*u,0,7); g.fill(); // 右目
+        g.beginPath(); g.arc(0,-11*u,1*u,0,7); g.fill(); // 鼻先(上向き)
+        // 口(笑顔)
+        g.strokeStyle="#2a1a0a"; g.lineWidth=0.6*u;
+        g.beginPath(); g.arc(0,-7*u,2*u,0.3,Math.PI-0.3); g.stroke();
+        // 耳(垂れる)
+        g.fillStyle="#c88a44";
+        g.beginPath(); g.ellipse(-5*u,-7*u,1.8*u,3*u,0.4,0,7); g.fill();
+        g.beginPath(); g.ellipse(5*u,-7*u,1.8*u,3*u,-0.4,0,7); g.fill();
+      } else {
+        // 後頭部:耳が立つ
+        g.fillStyle="#c88a44";
+        g.beginPath();
+        g.moveTo(-4.5*u,-12*u); g.lineTo(-2*u,-16*u); g.lineTo(-0.5*u,-12*u); g.fill();
+        g.beginPath();
+        g.moveTo(4.5*u,-12*u); g.lineTo(2*u,-16*u); g.lineTo(0.5*u,-12*u); g.fill();
+        // 鼻先(前向き=画面上)
+        g.fillStyle="#f6e8d0";
+        g.beginPath(); g.ellipse(0,-12*u,2*u,1.6*u,0,0,7); g.fill();
+        g.fillStyle="#2a1a0a";
+        g.beginPath(); g.arc(0,-12.5*u,0.7*u,0,7); g.fill();
+      }
+    } },
+  cat: { arm:"#b9c2cc", armWater:"#97a2ad",
+    draw(g,u,now,flutter,spread,faceUp) {
+      if (faceUp) {
+        // お腹(白)
+        g.fillStyle="#e8eef2";
+        g.beginPath(); g.ellipse(0,3*u,5.5*u,11.5*u,0,0,7); g.fill();
+        g.fillStyle="#b9c2cc";
+        g.beginPath(); g.ellipse(-4.5*u,3*u,1.3*u,10*u,0,0,7); g.fill();
+        g.beginPath(); g.ellipse(4.5*u,3*u,1.3*u,10*u,0,0,7); g.fill();
+      } else {
+        g.fillStyle="#b9c2cc";
+        g.beginPath(); g.ellipse(0,3*u,5.5*u,11.5*u,0,0,7); g.fill();
+        g.fillStyle="#e8eef2";
+        g.beginPath(); g.ellipse(0,5*u,2.6*u,6.5*u,0,0,7); g.fill();
+      }
+      // 脚
+      g.strokeStyle="#b9c2cc"; g.lineWidth=2.4*u; g.lineCap="round";
+      if (spread>0) {
+        const sp=spread*50*Math.PI/180, ll=7*u;
+        g.beginPath(); g.moveTo(-1.5*u,11*u); g.lineTo(-1.5*u-Math.sin(sp)*ll,11*u+Math.cos(sp)*ll); g.stroke();
+        g.beginPath(); g.moveTo(1.5*u,11*u); g.lineTo(1.5*u+Math.sin(sp)*ll,11*u+Math.cos(sp)*ll); g.stroke();
+      }
+      // しっぽ
+      const ten=Math.sin(now/60)*1.5*u;
+      g.beginPath(); g.moveTo(0,14*u); g.quadraticCurveTo(4*u+ten,17*u,3*u+ten,21*u); g.stroke();
+      // 頭
+      g.fillStyle=faceUp?"#e8eef2":"#b9c2cc";
+      g.beginPath(); g.arc(0,-8*u,4.8*u,0,7); g.fill();
+      if (faceUp) {
+        // 仰向け=お腹側の顔(白い顎)、目・鼻・ひげが上向きに見える
+        // 耳(横に倒れる)
+        g.fillStyle="#b9c2cc";
+        g.beginPath(); g.moveTo(-5*u,-8*u); g.lineTo(-7*u,-10*u); g.lineTo(-3*u,-10*u); g.closePath(); g.fill();
+        g.beginPath(); g.moveTo(5*u,-8*u); g.lineTo(7*u,-10*u); g.lineTo(3*u,-10*u); g.closePath(); g.fill();
+        g.fillStyle="#2a3a2a";
+        g.beginPath(); g.arc(-1.9*u,-8.5*u,1*u,0,7); g.fill();
+        g.beginPath(); g.arc(1.9*u,-8.5*u,1*u,0,7); g.fill();
+        // 鼻(上向き=画面外側へ)
+        g.fillStyle="#f4b8c4";
+        g.beginPath(); g.moveTo(0,-10.5*u); g.lineTo(-0.8*u,-11.3*u); g.lineTo(0.8*u,-11.3*u); g.closePath(); g.fill();
+        // ひげ
+        g.strokeStyle="#aab4bf"; g.lineWidth=0.4*u;
+        for (const yy of [-6.5,-5.7]) {
+          g.beginPath(); g.moveTo(-1.5*u,yy*u); g.lineTo(-6*u,(yy-.3)*u); g.stroke();
+          g.beginPath(); g.moveTo(1.5*u,yy*u); g.lineTo(6*u,(yy-.3)*u); g.stroke();
+        }
+      } else {
+        // うつ伏せ=後頭部、耳がピンと立つ
+        g.fillStyle="#b9c2cc";
+        g.beginPath(); g.moveTo(-4.5*u,-9*u); g.lineTo(-5.5*u,-13.5*u); g.lineTo(-1.5*u,-11*u); g.closePath(); g.fill();
+        g.beginPath(); g.moveTo(4.5*u,-9*u); g.lineTo(5.5*u,-13.5*u); g.lineTo(1.5*u,-11*u); g.closePath(); g.fill();
+        g.fillStyle="#f4b8c4";
+        g.beginPath(); g.moveTo(-4*u,-10*u); g.lineTo(-4.6*u,-12.3*u); g.lineTo(-2.7*u,-11*u); g.closePath(); g.fill();
+        g.beginPath(); g.moveTo(4*u,-10*u); g.lineTo(4.6*u,-12.3*u); g.lineTo(2.7*u,-11*u); g.closePath(); g.fill();
+        // 目は閉じた感じ(水中)
+        g.strokeStyle="#2a3a2a"; g.lineWidth=0.5*u;
+        g.beginPath(); g.moveTo(-2.5*u,-8.5*u); g.lineTo(-1.3*u,-8.5*u); g.stroke();
+        g.beginPath(); g.moveTo(2.5*u,-8.5*u); g.lineTo(1.3*u,-8.5*u); g.stroke();
+      }
+    } }
+};
+
+function loop(now) { update(now); draw(now); requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+
+function show(id) {
+  for (const x of ["title","false","result"]) document.getElementById(x).classList.add("hidden");
+  if (id) document.getElementById(id).classList.remove("hidden");
+}
+function tapX(x) {
+  if (state===S.MARKS||state===S.SET) { falseStart(); return; }
+  if (state!==S.SWIM) return;
+  if (!G.dove) { dive(); return; }
+  onTap(x<W/2?"L":"R");
+}
+cv.addEventListener("touchstart",e=>{ e.preventDefault(); ac(); for (const t of e.changedTouches) tapX(t.clientX); },{passive:false});
+cv.addEventListener("mousedown",e=>{ ac(); tapX(e.clientX); });
+window.addEventListener("keydown",e=>{
+  if (e.repeat) return;
+  if (document.activeElement&&document.activeElement.id==="nameInput") return;
+  if (e.key==="f"||e.key==="F") tapX(0);
+  else if (e.key==="j"||e.key==="J") tapX(W);
+  else if (e.key===" ") tapX(W/2-1);
+});
+
+function shareText() {
+  const n=playerName?playerName+"、":"";
+  const c=CHAR==="dog"?"🐕":CHAR==="cat"?"🐈":"🏊";
+  return "🏅 "+RACE_DIST+"m個人メドレー タイムアタック\n"+c+n+fmt(G.finalTime)+" で泳ぎ切った!\nバタ→背→平→自、4泳法制覇!\nお前は何秒で泳げる?\n#個人メドレーチャレンジ\n"+location.href;
+}
+document.getElementById("shareXBtn").addEventListener("click",()=>{
+  window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent(shareText()),"_blank");
+});
+document.getElementById("copyBtn").addEventListener("click",async()=>{
+  const msg=document.getElementById("copied");
+  try { await navigator.clipboard.writeText(shareText()); msg.textContent="コピーしました!ストーリーズに貼ってね"; }
+  catch(e) { msg.textContent="コピーできませんでした(スクショ共有してね)"; }
+  setTimeout(()=>{ msg.textContent=""; },4000);
+});
+
+function rankOf(t) {
+  if (RACE_DIST===100) {
+    if (t<62) return "🏆 全国レベル!?";
+    if (t<70) return "🥇 県大会 上位入賞!";
+    if (t<82) return "🥈 県大会 出場レベル";
+    if (t<105) return "🥉 自己ベスト更新中!";
+    return "🏅 完泳おめでとう!";
+  }
+  if (t<2*60+8) return "🏆 全国レベル!?";
+  if (t<2*60+25) return "🥇 県大会 上位入賞!";
+  if (t<2*60+50) return "🥈 県大会 出場レベル";
+  if (t<3*60+40) return "🥉 自己ベスト更新中!";
+  return "🏅 完泳おめでとう!";
+}
+function bestKey() { return "im"+RACE_DIST+"-best"; }
+function showResult() {
+  document.getElementById("finalTime").textContent=fmt(G.finalTime);
+  document.getElementById("rFly").textContent=G.legTimes[0]?fmt(G.legTimes[0]):"-";
+  document.getElementById("rBack").textContent=G.legTimes[1]?fmt(G.legTimes[1]):"-";
+  document.getElementById("rBreast").textContent=G.legTimes[2]?fmt(G.legTimes[2]):"-";
+  document.getElementById("rFree").textContent=G.legTimes[3]?fmt(G.legTimes[3]):"-";
+  document.getElementById("rCombo").textContent=G.maxCombo+"回";
+  document.getElementById("rank").textContent=rankOf(G.finalTime);
+  const nb=document.getElementById("newBest"),mr=document.getElementById("myRank");
+  if (myBest===null||G.finalTime<myBest) {
+    myBest=G.finalTime; store.set(bestKey(),String(myBest));
+    nb.classList.remove("hidden"); mr.textContent="";
+  } else { nb.classList.add("hidden"); mr.textContent="あなたのベスト "+fmt(myBest); }
+  show("result");
+}
+function updateBestLabel() {
+  document.getElementById("bestLabel").textContent=myBest?"あなたのベスト "+fmt(myBest):"";
+}
+
+const nameInput=document.getElementById("nameInput");
+function setOpt(cls,attr,val) {
+  document.querySelectorAll("."+cls).forEach(x=>x.classList.toggle("on",x.dataset[attr]===val));
+}
+function refreshDist() {
+  document.getElementById("titleH1").textContent=RACE_DIST+"m 個人メドレー";
+  const sb=parseFloat(store.get(bestKey())); myBest=isNaN(sb)?null:sb; updateBestLabel();
+}
+(function init() {
+  const sn=store.get("player-name"); if (sn) { playerName=sn; nameInput.value=sn; }
+  const sd=store.get("im-dist"); if (sd==="200") { RACE_DIST=200; setOpt("distOpt","dist","200"); }
+  const sc=store.get("im-char"); if (sc) { CHAR=sc; setOpt("chOpt","ch",sc); }
+  refreshDist();
+})();
+nameInput.addEventListener("input",()=>{ playerName=nameInput.value.trim(); });
+for (const b of document.querySelectorAll(".distOpt")) {
+  b.addEventListener("click",()=>{
+    RACE_DIST=parseInt(b.dataset.dist,10); setOpt("distOpt","dist",b.dataset.dist);
+    store.set("im-dist",String(RACE_DIST)); refreshDist();
+  });
+}
+for (const b of document.querySelectorAll(".chOpt")) {
+  b.addEventListener("click",()=>{ CHAR=b.dataset.ch; setOpt("chOpt","ch",CHAR); store.set("im-char",CHAR); });
+}
+for (const b of document.querySelectorAll(".tolOpt")) {
+  b.addEventListener("click",()=>{ TOL=parseInt(b.dataset.tol,10); setOpt("tolOpt","tol",b.dataset.tol); });
+}
+document.getElementById("startBtn").addEventListener("click",()=>{
+  ac(); playerName=nameInput.value.trim();
+  if (!playerName) { nameInput.placeholder="← 名前を入れてからスタート!"; nameInput.focus(); return; }
+  store.set("player-name",playerName); show(null); startSequence();
+});
+document.getElementById("retryBtn").addEventListener("click",()=>{ show(null); startSequence(); });
+document.getElementById("againBtn").addEventListener("click",()=>{ show(null); startSequence(); });
+document.getElementById("homeBtn").addEventListener("click",()=>{ updateBestLabel(); show("title"); state=S.TITLE; });
+})();
+</script>
+</body>
+</html>
